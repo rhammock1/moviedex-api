@@ -25,32 +25,92 @@ const validateBearerToken = function(req, res, next) {
 app.use(validateBearerToken)
 
 const handleGetAllMovies = function(req, res) {
-  res.json({ movies });
+  return({ movies });
 }
+
+const handleGetMoviesByAvgVote = function(req, res) {
+  const avgVote = parseFloat(req.query.avg_vote);
+
+  if(Number.isNaN(avgVote)){
+    return res.status(400).json({message: `Average vote should be a number`})
+  } 
+  let movieByAvgVote = movies.filter(movie => movie.avg_vote >= avgVote);
+  if(avgVote && movieByAvgVote.length === 0) {
+    res.status(404).json({ message: `Couldn't find any movies with that average vote or higher. Average vote is a range from 1 - 10`})
+  } else {
+    return(movieByAvgVote);
+  }
+}
+
 const handleGetMoviesByCountry = function(req, res) {
   const country = req.query.country.toLowerCase();
   let movieByCountry = movies.filter(movie => movie.country.toLowerCase().includes(country));
-  res.json(movieByCountry);
+
+  if(country && movieByCountry.length === 0) {
+    res.status(404).json({message: `Couldn't find any movies from matching countries. Try another one.`})} else {
+      return(movieByCountry);
+    }
+
 }
+
 const handleGetMoviesByGenre = function(req, res) {
   const genre = req.query.genre.toLowerCase();
-
-
   let filteredMovies = movies.filter(movie => movie.genre.toLowerCase().includes(genre) );
-  res.json({filteredMovies});
+
+  if(genre && filteredMovies.length === 0) {
+    res.status(404).json({message: `Couldn't find any movies with matching genres. Try another one.`})
+  } else {
+    return(filteredMovies);
+  }
+}
+
+const handleFilteringMovies = function(req, res) {
+  const genre = req.query.genre || ''; 
+  const country = req.query.country || '';
+  const avg_vote = req.query.avg_vote || '';
+  let filteredMovies;
+  console.log(genre, country, avg_vote)
+
+  if(genre && avg_vote && country) {
+    let genreMovies = handleGetMoviesByGenre(req, res);
+    
+    filteredMovies = genreMovies.filter(movie => movie.avg_vote >= avg_vote);
+    filteredMovies = filteredMovies.filter(movie => movie.country.includes(country));
+  }
+  if(genre && avg_vote) {
+    let genreMovies = handleGetMoviesByGenre(req, res);
+    
+    filteredMovies = genreMovies.filter(movie => movie.avg_vote >= avg_vote);
+  }
+  if(genre && country) {
+    let genreMovies = handleGetMoviesByGenre(req, res);
+
+    filteredMovies = genreMovies.filter(movie => movie.country.includes(country));
+  }
+  if(country && avg_vote) {
+    let countryMovies = handleGetMoviesByCountry(req, res);
+
+    filteredMovies = countryMovies.filter(movie => movie.avg_vote >= avg_vote);
+  }
+  return filteredMovies;
+  
 }
 
 const handleGetMovies = function(req, res) {
-  const genre = req.query.genre;
-  const country = req.query.country
+ 
+  const { genre, country, avg_vote } = req.query;
   
-  if(country) {
-    return handleGetMoviesByCountry(req, res);
+  if((genre && country && avg_vote) || (genre && country) || (genre && avg_vote) || (country && avg_vote)) {
+    res.json(handleFilteringMovies(req, res));
   }
-  if(genre) {
-    return handleGetMoviesByGenre(req, res);
+  if(avg_vote) {
+    res.json(handleGetMoviesByAvgVote(req, res));
+  } else if(country) {
+    res.json(handleGetMoviesByCountry(req, res));
+  }else if(genre) {
+    res.json(handleGetMoviesByGenre(req, res));
   }
-  else { return handleGetAllMovies(req, res);}
+  else { res.json(handleGetAllMovies(req, res));}
 }
 app.get('/movies', handleGetMovies)
 
