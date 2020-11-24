@@ -27,12 +27,30 @@ app.use(validateBearerToken)
 const handleGetAllMovies = function(req, res) {
   res.json({ movies });
 }
+const handleGetMoviesByCountry = function(req, res) {
+  const country = req.query.country.toLowerCase();
+  let movieByCountry = movies.filter(movie => movie.country.toLowerCase().includes(country));
+  res.json(movieByCountry);
+}
 const handleGetMoviesByGenre = function(req, res) {
-  req.query.genre
+  const genre = req.query.genre.toLowerCase();
+
+
+  let filteredMovies = movies.filter(movie => movie.genre.toLowerCase().includes(genre) );
+  res.json({filteredMovies});
 }
 
 const handleGetMovies = function(req, res) {
-  handleGetAllMovies(req, res);
+  const genre = req.query.genre;
+  const country = req.query.country
+  
+  if(country) {
+    return handleGetMoviesByCountry(req, res);
+  }
+  if(genre) {
+    return handleGetMoviesByGenre(req, res);
+  }
+  else { return handleGetAllMovies(req, res);}
 }
 app.get('/movies', handleGetMovies)
 
