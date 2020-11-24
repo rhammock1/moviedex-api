@@ -65,11 +65,11 @@ const handleGetMoviesByGenre = function(req, res) {
 }
 
 const handleFilteringMovies = function(req, res) {
-  const genre = req.query.genre.toLowerCase() || ''; 
-  const country = req.query.country.toLowerCase() || '';
-  const avg_vote = parseFloat(req.query.avg_vote) || '';
+  const genre = req.query.genre || ''; 
+  const country = req.query.country || '';
+  const avg_vote = req.query.avg_vote || 0;
   let filteredMovies;
-   if(Number.isNaN(avg_vote)){
+   if(Number.isNaN(parseFloat(avg_vote))){
     return res.status(400).json({message: `Average vote should be a number`})
   } 
 
@@ -77,7 +77,7 @@ const handleFilteringMovies = function(req, res) {
     let genreMovies = handleGetMoviesByGenre(req, res);
     
     let firstFilteredMovies = genreMovies.filter(movie => movie.avg_vote >= avg_vote);
-    filteredMovies = firstFilteredMovies.filter(movie => movie.country.toLowerCase().includes(country));
+    filteredMovies = firstFilteredMovies.filter(movie => movie.country.toLowerCase().includes(country.toLowerCase()));
   } else if(genre && avg_vote) {
     let genreMovies = handleGetMoviesByGenre(req, res);
     
@@ -85,7 +85,7 @@ const handleFilteringMovies = function(req, res) {
   } else if(genre && country) {
     let genreMovies = handleGetMoviesByGenre(req, res);
 
-    filteredMovies = genreMovies.filter(movie => movie.country.toLowerCase().includes(country));
+    filteredMovies = genreMovies.filter(movie => movie.country.toLowerCase().includes(country.toLowerCase()));
   } else if(country && avg_vote) {
     let countryMovies = handleGetMoviesByCountry(req, res);
 
@@ -109,10 +109,9 @@ const handleGetMovies = function(req, res) {
     res.json(handleGetMoviesByAvgVote(req, res));
   } else if(country) {
     res.json(handleGetMoviesByCountry(req, res));
-  }else if(genre) {
+  } else if(genre) {
     res.json(handleGetMoviesByGenre(req, res));
-  }
-  else { res.json(handleGetAllMovies(req, res));}
+  } else { res.json(handleGetAllMovies(req, res));}
 }
 app.get('/movies', handleGetMovies)
 
