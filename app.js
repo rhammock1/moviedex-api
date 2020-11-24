@@ -65,34 +65,37 @@ const handleGetMoviesByGenre = function(req, res) {
 }
 
 const handleFilteringMovies = function(req, res) {
-  const genre = req.query.genre || ''; 
-  const country = req.query.country || '';
-  const avg_vote = req.query.avg_vote || '';
+  const genre = req.query.genre.toLowerCase() || ''; 
+  const country = req.query.country.toLowerCase() || '';
+  const avg_vote = parseFloat(req.query.avg_vote) || '';
   let filteredMovies;
-  console.log(genre, country, avg_vote)
+   if(Number.isNaN(avg_vote)){
+    return res.status(400).json({message: `Average vote should be a number`})
+  } 
 
   if(genre && avg_vote && country) {
     let genreMovies = handleGetMoviesByGenre(req, res);
     
-    filteredMovies = genreMovies.filter(movie => movie.avg_vote >= avg_vote);
-    filteredMovies = filteredMovies.filter(movie => movie.country.includes(country));
-  }
-  if(genre && avg_vote) {
+    let firstFilteredMovies = genreMovies.filter(movie => movie.avg_vote >= avg_vote);
+    filteredMovies = firstFilteredMovies.filter(movie => movie.country.toLowerCase().includes(country));
+  } else if(genre && avg_vote) {
     let genreMovies = handleGetMoviesByGenre(req, res);
     
     filteredMovies = genreMovies.filter(movie => movie.avg_vote >= avg_vote);
-  }
-  if(genre && country) {
+  } else if(genre && country) {
     let genreMovies = handleGetMoviesByGenre(req, res);
 
-    filteredMovies = genreMovies.filter(movie => movie.country.includes(country));
-  }
-  if(country && avg_vote) {
+    filteredMovies = genreMovies.filter(movie => movie.country.toLowerCase().includes(country));
+  } else if(country && avg_vote) {
     let countryMovies = handleGetMoviesByCountry(req, res);
 
     filteredMovies = countryMovies.filter(movie => movie.avg_vote >= avg_vote);
   }
-  return filteredMovies;
+  if(filteredMovies.length === 0) {
+    res.status(404).json({ message: `Couldn't find any matching movies`})
+  } else {
+    return filteredMovies;
+  }
   
 }
 
@@ -102,8 +105,7 @@ const handleGetMovies = function(req, res) {
   
   if((genre && country && avg_vote) || (genre && country) || (genre && avg_vote) || (country && avg_vote)) {
     res.json(handleFilteringMovies(req, res));
-  }
-  if(avg_vote) {
+  } else if(avg_vote) {
     res.json(handleGetMoviesByAvgVote(req, res));
   } else if(country) {
     res.json(handleGetMoviesByCountry(req, res));
